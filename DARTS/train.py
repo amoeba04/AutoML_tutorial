@@ -6,6 +6,8 @@ import numpy as np
 import torch
 import torch.backends.cudnn as cudnn
 
+CLASSES = 10
+
 def main():
     if not torch.cuda.is_available():
         logger.info('No GPU device available')
@@ -16,14 +18,26 @@ def main():
     torch.manual_seed(args.seed)
     torch.cuda.set_device(args.gpu)
     torch.cuda.manual_seed(args.seed)
-    cudnn.benchmark = True
     cudnn.enabled = True
+    cudnn.benchmark = True      # benchmark mode to find the best algorithm unless the input size doesn't vary
+    logger.info('gpu device = %d' % args.gpu)
+    logger.info("args = %s", args)
+
+    ##### TODO: Code Network, genotypes
+    # genotype = eval("genotypes.%s" % args.arch)     # FIXME: replace eval
+    # model = Network(args.init_channels, CLASSES, args.layers, args.auxiliary, genotype)
+
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=0, help='random seed')
     parser.add_argument('--gpu', type=int, default=0, help='gpu device id')
+
+    parser.add_argument('--arch', type=str, default='DARTS', help='which architecture to use')
+    parser.add_argument('--init_channels', type=int, default=36, help='num of init channels')
+    parser.add_argument('--layers', type=int, default=20, help='total number of layers')
+    parser.add_argument('--auxiliary', action='store_true', default=False, help='use auxiliary tower')
     args = parser.parse_args()
 
     logger = logging.getLogger()
