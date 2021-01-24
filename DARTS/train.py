@@ -10,6 +10,7 @@ import torch
 import torch.backends.cudnn as cudnn
 
 from DARTS import genotypes
+from DARTS.model import NetworkCIFAR as Network
 
 CLASSES = 10  # # of classes
 
@@ -34,12 +35,12 @@ def main():
     logger.info("gpu device = %d", args.gpu)
     logger.info("args = %s", args)
 
-    # TODO: Code Network
     if args.DARTS:
         genotype = genotypes.DARTS
     else:
         genotype = genotypes.PRIMITIVES
-    # model = Network(args.init_channels, CLASSES, args.layers, args.auxiliary, genotype)
+    model = Network(args.init_channels, CLASSES, args.layers, args.auxiliary, genotype)
+    # TODO: Code below
 
 
 if __name__ == "__main__":
