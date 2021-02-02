@@ -43,7 +43,8 @@ def main():
     if args.DARTS:
         genotype = genotypes.DARTS
     else:
-        genotype = genotypes.PRIMITIVES
+        # TODO: fix genotypes.*
+        genotype = genotypes.DARTS
     model = Network(args.init_channels, CLASSES, args.layers, args.auxiliary, genotype)
     model = model.cuda()
 
@@ -150,9 +151,7 @@ if __name__ == "__main__":
     parser.add_argument("--save", type=str, default="EXP", help="experiment name")
     parser.add_argument("--epochs", type=int, default=600, help="num of training epochs")
 
-    parser.add_argument(
-        "--DARTS", type=str, action="store_true", help="use DARTS architecture or not"
-    )
+    parser.add_argument("--DARTS", action="store_true", help="use DARTS architecture or not")
     parser.add_argument("--init_channels", type=int, default=36, help="num of init channels")
     parser.add_argument("--layers", type=int, default=20, help="total number of layers")
     parser.add_argument("--auxiliary", action="store_true", help="use auxiliary tower")
@@ -165,6 +164,8 @@ if __name__ == "__main__":
     parser.add_argument("--batch_size", type=int, default=96, help="batch size")
     parser.add_argument("--drop_path_prob", type=float, default=0.2, help="drop path probability")
     parser.add_argument("--grad_clip", type=float, default=5, help="gradient clipping")
+    parser.add_argument("--cutout", action="store_true", default=False, help="use cutout")
+    parser.add_argument("--cutout_length", type=int, default=16, help="cutout length")
     args = parser.parse_args()
 
     logger = logging.getLogger()
