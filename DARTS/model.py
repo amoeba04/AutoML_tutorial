@@ -82,3 +82,28 @@ class NetworkCIFAR(nn.Module):
             else:
                 reduction = False
             cell = Cell(genotype, c_prev_prev, c_prev, c_curr, reduction, reduction_prev)
+            reduction_prev = reduction
+            self.cells += [cell]
+            c_prev_prev, c_prev = c_prev, cell.multiplier * c_curr
+            if i == 2 * layers // 3:
+                c_to_auxiliary = c_prev
+
+        if auxiliary:
+            pass
+            # self.auxiliary_head = AuxiliaryHeadCIFAR(C_to_auxiliary, num_classes)
+            # self.global_pooling = nn.AdaptiveAvgPool2d(1)
+            # self.classifier = nn.Linear(C_prev, num_classes)
+            # TODO: implement auxiliary
+
+    def forward(self, input):
+        logits_aux = None
+        s0 = s1 = self.stem(input)
+        for i, cell in enumerate(self.cells):
+            s0, s1 = s1, cell(s0, s1, self.drop_path_prob)
+            # if i == 2*self.layers//3:
+            #     if self.auxiliary and self.training:
+            #         logits_aux = self.auxiliary_head(s1)
+            # TODO: implement auxiliary
+        out = self.global_pooling(s1)
+        logits = self.classifier(out.view(out.size(0), -1))
+        return logits, logits_aux
