@@ -120,8 +120,8 @@ venv.bak/
 # mkdocs documentation
 /site
 
-# mypy
-test.py
+# my files
+*.egg-info/
 
 # Pyre type checker
 .pyre/

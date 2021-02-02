@@ -1,6 +1,8 @@
+import torch
 import torch.nn as nn
 
-from DARTS.operations import *
+from DARTS.operations import OPS, ReLUConvBN, FactorizedReduce, Identity
+from DARTS.utils import drop_path
 
 
 class Cell(nn.Module):
@@ -39,8 +41,22 @@ class Cell(nn.Module):
         s0 = self.preprocess0(s0)
         s1 = self.preprocess1(s1)
 
-        state = [s0, s1]
-        # TODO: Code below
+        states = [s0, s1]
+        for i in range(self._steps):
+            h1 = states[self._indices[2 * i]]
+            h2 = states[self._indices[2 * i + 1]]
+            op1 = self._ops[2 * i]
+            op2 = self._ops[2 * i + 1]
+            h1 = op1(h1)
+            h2 = op2(h2)
+            if self.training and drop_prob > 0.0:
+                if not isinstance(op1, Identity):
+                    h1 = drop_path(h1, drop_prob)
+                if not isinstance(op2, Identity):
+                    h2 = drop_path(h2, drop_prob)
+            s = h1 + h2
+            states += [s]
+        return torch.cat([states[i] for i in self._concat], dim=1)
 
 
 class NetworkCIFAR(nn.Module):
