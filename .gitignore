@@ -122,6 +122,8 @@ venv.bak/
 
 # my files
 *.egg-info/
+*/checkpoints/*
+*/checkpoint/*
 
 # Pyre type checker
 .pyre/

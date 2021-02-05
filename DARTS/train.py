@@ -72,11 +72,14 @@ def main():
 
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epochs))
 
+    if not os.path.exists(args.save):
+        os.makedirs(args.save)
+
     for epoch in range(args.epochs):
         logger.info("epoch %d lr %e", epoch, scheduler.get_last_lr()[0])
         model.drop_path_prob = args.drop_path_prob * epoch / args.epochs
 
-        train_acc, train_obj = train(train_queue, model, criterion, optimizer)
+        train_acc, train_obj = train(train_queue, model, criterion, optimizer, epoch)
         logger.info("train_acc %f", train_acc)
 
         valid_acc, valid_obj = infer(valid_queue, model, criterion)
@@ -87,7 +90,7 @@ def main():
         utils.save(model, os.path.join(args.save, "weights.pt"))
 
 
-def train(train_queue, model, criterion, optimizer):
+def train(train_queue, model, criterion, optimizer, epoch):
     objs = utils.AverageMeter()
     top1 = utils.AverageMeter()
     top5 = utils.AverageMeter()
@@ -109,34 +112,41 @@ def train(train_queue, model, criterion, optimizer):
 
         prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
         n = input.size(0)
-        objs.update(loss, n)
-        top1.update(prec1, n)
-        top5.update(prec5, n)
+        objs.update(loss.item(), n)
+        top1.update(prec1.item(), n)
+        top5.update(prec5.item(), n)
 
         if step % args.report_freq == 0:
             logger.info("train %03d %e %f %f", step, objs.avg, top1.avg, top5.avg)
 
+        if step % args.save_freq == 0:
+            utils.save(
+                model, os.path.join(args.save, "weights_" + str(epoch) + "_" + str(step) + ".pt")
+            )
+
     return top1.avg, objs.avg
 
 
+@torch.no_grad()
 def infer(valid_queue, model, criterion):
+    # TODO: fix memory overusing
     objs = utils.AverageMeter()
     top1 = utils.AverageMeter()
     top5 = utils.AverageMeter()
     model.eval()
 
     for step, (input, target) in enumerate(valid_queue):
-        input = Variable(input, volatile=True).cuda()
-        target = Variable(target, volatile=True).cuda(non_blocking=True)
+        input = Variable(input).cuda()
+        target = Variable(target).cuda(non_blocking=True)
 
         logits, _ = model(input)
         loss = criterion(logits, target)
 
         prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
         n = input.size(0)
-        objs.update(loss, n)
-        top1.update(prec1, n)
-        top5.update(prec5, n)
+        objs.update(loss.item(), n)
+        top1.update(prec1.item(), n)
+        top5.update(prec5.item(), n)
 
         if step % args.report_freq == 0:
             logger.info("valid %03d %e %f %f", step, objs.avg, top1.avg, top5.avg)
@@ -149,9 +159,12 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=0, help="random seed")
     parser.add_argument("--gpu", type=int, default=0, help="gpu device id")
     parser.add_argument("--data", type=str, default="../data", help="location of the data corpus")
-    parser.add_argument("--save", type=str, default="EXP", help="experiment name")
+    parser.add_argument(
+        "--save", type=str, default="./DARTS/checkpoints", help="location of the checkpoints"
+    )
     parser.add_argument("--epochs", type=int, default=1, help="num of training epochs")
     parser.add_argument("--report_freq", type=float, default=50, help="report frequency")
+    parser.add_argument("--save_freq", type=float, default=500, help="save frequency")
 
     parser.add_argument("--DARTS", action="store_true", help="use DARTS architecture or not")
     parser.add_argument("--init_channels", type=int, default=36, help="num of init channels")
