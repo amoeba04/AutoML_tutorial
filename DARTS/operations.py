@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 
-# TODO: Code undefined operations
-
 OPS = {
     "none": lambda C, stride, affine: Zero(stride),
     "avg_pool_3x3": lambda C, stride, affine: nn.AvgPool2d(
